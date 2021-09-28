@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chat</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+</head>
+<body>
+    {% block content %}
+    <div style="margin: 2em;">
+        <div>{{ dateNow }}</div>
+    </div>
+    <label for="message">Message:</label>
+    <input type="text" id="message" name="message">
+    <button id="submit">Send</button>
+    <div id="messages">
+        {% for item in all %}
+            <div><label style="color: #1f658d;">{{item.data}}: </label>{{item.text}}</div>
+        {% endfor %}
+    </div>
+    {% endblock %}
+    <script type="text/javascript">
+        $('#submit').on('click', function(e) {
+            var xhr = new XMLHttpRequest();
+            xhr.onreadystatechange = function () {
+                if (this.readyState != 4) return;
+                if (this.status == 200) {
+                    console.log(this)
+                    var xhrPost = new XMLHttpRequest();
+                    xhrPost.onreadystatechange = function () {
+                        if (this.readyState != 4) return;
+                        if (this.status == 200) {
+                            var data = JSON.parse(this.responseText);
+                            msgs = ""
+                            data.forEach(element => {
+                                console.log(element)
+                                msgs += "<div><label style=\"color: #1f658d;\">"+
+                                    element.data + " </label>" + element.text + "</div>\n";
+                            });
+                            $("#messages").html(msgs);
+                        }
+                    };
+                    xhrPost.open('GET', "/api/messages", true);
+                    xhrPost.send();
+                }
+            };
+            xhr.open("POST", "/api/messages", true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.send(JSON.stringify({
+                message: $("#message").val()
+            }));
+        })
+    </script>
+</body>
+</html>

@@ -1,58 +1,44 @@
 import os
+import uuid
 
-from flask import Flask, request
+from datetime import datetime
+from flask import Flask, request, render_template, jsonify
 from google.cloud import firestore
 
 app = Flask(__name__)
 
-# db = firestore.Client(project='roi-takeoff-user79')
-# users_ref = db.collection(u'users').document(u'user')
-# docs = users_ref.get()
-# print(next(docs))
-# print([doc.to_dict() for doc in docs])
-
-# Add a new document
 db = firestore.Client()
-doc_ref = db.collection(u'users').document(u'alovelace')
-doc_ref.set({
-    u'first': u'Ada',
-    u'last': u'Lovelace',
-    u'born': 1815
-})
 
-# Then query for documents
-users_ref = db.collection(u'users')
+@app.route('/')
+def index():
+    date_time = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
+    return render_template('index.html', dateNow=date_time, all=get_all())
 
-for doc in users_ref.stream():
-    print(u'{} => {}'.format(doc.id, doc.to_dict()))
+def get_all():
+    ref = db.collection(u'messages')
+    docs = ref.stream()
+    d = [doc.to_dict() for doc in docs]
+    return sorted(d, key=lambda x: x["data"], reverse=True)
 
-@app.route("/")
-def hello_world():
-    name = os.environ.get("NAME", "World")
-    return "Hello {}!".format(name)
-
-@app.route("/users")
+@app.route("/api/messages", methods = ['GET', 'POST'])
 def users():
-    return {"a": 123}
-    # users_ref = db.collection(u'users')
-    # docs = users_ref.stream()
-    # return {"result": [doc.to_dict() for doc in docs]}
+    if request.method == 'GET':
+        return jsonify(get_all())
+    elif request.method == 'POST':
+        doc_ref = db.collection(u'messages').document(str(uuid.uuid1()))
+        doc_ref.set({
+            u'data': datetime.now().strftime("%d-%m-%Y %H:%M:%S"),
+            u'text': request.json["message"]
+        })
+        return doc_ref.id, 200
 
-# @app.route("/users/<id>", methods = ['GET', 'POST', 'DELETE'])
-# def user(id):
-#     if request.method == 'GET':
-#         users_ref = db.collection(u'users')
-#         docs = users_ref.stream()
-#         return [doc.to_dict() for doc in docs]
-#     if request.method == 'POST':
-#         doc_ref = db.collection(u'users').document(u'user')
-#         doc_ref.set({
-#             u'first': u'Alan',
-#             u'middle': u'Mathison',
-#             u'last': u'Turing',
-#             u'born': 1912
-#         })
-
+@app.route("/api/messages/<id>", methods = ['GET', 'DELETE'])
+def user(id):
+    if request.method == 'GET':
+        return db.collection(u'users').document(id).to_dict()
+    if request.method == 'DELETE':
+        db.collection(u'users').document(id).delete()
+        return {}, 200
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))

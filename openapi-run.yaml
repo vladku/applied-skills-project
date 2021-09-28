@@ -1,0 +1,59 @@
+swagger: '2.0'
+info:
+  title: Cloud Endpoints + Cloud Run
+  description: Sample API on Cloud Endpoints with a Cloud Run backend
+  version: 1.0.0
+host: applied-skills-project-5ygjeqjcuq-nw.a.run.app
+schemes:
+  - https
+produces:
+  - application/json
+x-google-backend:
+  address: applied-skills-project
+  protocol: h2
+paths:
+  /api/messages:
+    get:
+      summary: Get messages
+      responses:
+        '200':
+          description: A successful response
+          schema:
+            type: array
+    post:
+      summary: Post message
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+            example:
+              message: Test message
+      responses:
+        '200':
+          description: A successful response
+          schema:
+            type: string
+  /api/messages/{id}:
+    get:
+      summary: Get message
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: id of message to get
+    delete:
+      summary: Delete message
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: id of message to get
